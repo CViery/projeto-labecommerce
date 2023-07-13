@@ -27,7 +27,7 @@ app.post("/products", createProducts);
 //Pesquisar produto por nome
 app.get("/products/search", ProductsByName);
 //Pesquisar todos os produtos
-app.get("products",GetAllProducts)
+app.get("/products", GetAllProducts)
 //Editar Produtos pelo id
 app.put("/product/:id",updateProducts);
 //cadastrar compra
@@ -37,19 +37,38 @@ app.delete("/purchases/:id", DeletePurchase);
 //Ver compra pelo id
 app.get("/purchases/:id", GetPurchase);
 
-app.get("/teste", async (req:Request, res: Response)=>{
+app.get("/teste/:id", async (req, res) => {
   try {
-    const [DadosComprador] = await db.select(
-      "users.name as name",
-      "created_at as dataCompra",
-      "total_price as ValorTotal"
-      ).from("purchase").innerJoin("users", "purchases.buyer", "=", "users.id" );
-      const [DadosProduto] = await db.select(
-        "product.name","product.price", "quantity"
-      ).from("purchase_products").innerJoin("products","purchase_product.product_id", "=", "product.id" )
-      const result = [DadosComprador, DadosProduto]
-      res.send(DadosComprador)
+    const idSearch = req.params.id; 
+    /* console.log("ID de pesquisa:", idSearch) */; // Log do ID de pesquisa
+
+    const dados = await db
+      .select(
+        "purchases.id as idCompra",
+        "users.name as Cliente",
+        "users.email as EmailCliente",
+        "products.name as Item",
+        "products.price as ValorDoItem",
+        "quantity",
+        "purchases.total_price as ValorTotalDaCompra",
+        "purchases.created_at as Data"
+      )
+      .from("purchases_products")
+      .innerJoin("products", "product_id", "=", "products.id")
+      .innerJoin("purchases", "purchase_id", "=", "purchases.id")
+      .innerJoin("users", "purchases.buyer", "=", "users.id").where({purchase_id :idSearch});
+
+    console.log("Dados encontrados:", dados); // Log dos dados encontrados
+
+    if (dados.length > 0) {
+      res.send(dados);
+      console.log("Resposta enviada:", dados); // Log da resposta enviada
+    } else {
+      res.status(404).send("Nenhum dado encontrado com o ID fornecido.");
+      console.log("Resposta de erro enviada."); // Log da resposta de erro enviada
+    }
   } catch (error) {
-    
+    console.error("Erro ao processar solicitação:", error); // Log do erro
+    res.status(500).send("Ocorreu um erro ao processar a solicitação.");
   }
-})
+});
