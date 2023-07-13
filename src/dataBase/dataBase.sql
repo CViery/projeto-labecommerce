@@ -1,4 +1,4 @@
--- Active: 1688768141838@@127.0.0.1@3306
+-- Active: 1689074503695@@127.0.0.1@3306
 -- Active: 1687994845127@@127.0.0.1@3306
 CREATE TABLE users (
     id TEXT UNIQUE NOT NULL,
@@ -37,4 +37,10 @@ CREATE TABLE IF NOT EXISTS purchases_products(
 DROP TABLE users;
 DROP TABLE products;
 DROP TABLE purchases;
-DROP TABLE purchases_products
+DROP TABLE purchases_products;
+
+SELECT users.name, created_at, total_price from purchases
+INNER JOIN users on purchases.buyer = users.id;
+
+
+
