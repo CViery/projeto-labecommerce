@@ -2,10 +2,9 @@ import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { db } from '../../dataBase/knex';
 
-export async function updateProducts(req:Request, res: Response){
+export async function updateProducts(req: Request, res: Response) {
   try {
     const idToEdit = req.params.id;
-
     const newId = req.body.id;
     const newName = req.body.name;
     const newPrice = req.body.price;
@@ -13,31 +12,34 @@ export async function updateProducts(req:Request, res: Response){
     const newImage = req.body.image_url;
 
     if (newId !== undefined) {
-      if (typeof newId !== "string") {
-        res.status(StatusCodes.BAD_REQUEST);
-        throw new Error("'id' deve ser um number");
+      if (typeof newId !== 'string') {
+        res.status(StatusCodes.BAD_REQUEST).send({ error: "'id' deve ser uma string." });
+        return;
       }
-      if (newId.length < 1) {
-        res.status(StatusCodes.BAD_REQUEST);
-        throw new Error("'id' deve possuir no minimo um caracter");
+      if (newId.trim().length < 1) {
+        res.status(StatusCodes.BAD_REQUEST).send({ error: "'id' deve possuir pelo menos um caractere." });
+        return;
       }
     }
-    const [product] = await db("products").where({ id: idToEdit });
-    if (product) {
-      const updateProduct = {
-        id: newId || product.id,
-        name: newName || product.name,
-        price: isNaN(newPrice) ? product.price : newPrice,
-        description: newDescription || product.description,
-        image_url: newImage || product.imageUrl,
-      };
-      await db("products").where({ id: idToEdit }).update(updateProduct);
-    } else {
-      res.status(StatusCodes.BAD_REQUEST);
-      throw new Error("'id' não encontrado");
+
+    const existingProduct = await db('products').where({ id: idToEdit }).first();
+    if (!existingProduct) {
+      res.status(StatusCodes.NOT_FOUND).send({ error: "'id' não encontrado." });
+      return;
     }
-    res.status(StatusCodes.OK).send("Atualização realizada com sucesso");
+
+    const updatedProduct = {
+      id: newId || existingProduct.id,
+      name: newName || existingProduct.name,
+      price: newPrice !== undefined ? (isNaN(newPrice) ? existingProduct.price : newPrice) : existingProduct.price,
+      description: newDescription || existingProduct.description,
+      image_url: newImage || existingProduct.image_url,
+    };
+
+    await db('products').where({ id: idToEdit }).update(updatedProduct);
+
+    res.status(StatusCodes.OK).send({ message: 'Atualização realizada com sucesso.' });
   } catch (error) {
-    res.status(StatusCodes.BAD_REQUEST).send("erro");
+    res.status(StatusCodes.BAD_REQUEST).send({ error: 'Erro ao atualizar o produto.' });
   }
 }
